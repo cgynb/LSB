@@ -57,6 +57,7 @@ class LSB(object):
             for bit_i in range(8):
                 __synthesis[..., c_i] += bs_background[..., bit_i, c_i] * np.power(2, bit_i)
         self.synthesis = __synthesis.astype(np.uint8)
+        return self.synthesis
 
     def extract(self):
         bs_synthesis = self.bit_space(self.synthesis)
@@ -70,6 +71,7 @@ class LSB(object):
                     self.extract_background[..., color_i] += bs_synthesis[..., i, color_i] * np.power(2, i)
         self.extract_watermark = self.extract_watermark.astype(np.uint8)
         self.extract_background = self.extract_background.astype(np.uint8)
+        return self.extract_background, self.extract_watermark
 
     def run(self):
         self.embed()
@@ -84,9 +86,17 @@ class LSB(object):
 if __name__ == "__main__":
     if not os.path.exists("result"):
         os.mkdir("result")
-    for i in tqdm(range(1, 12)):
-        lsb = LSB(f"images/bg{i}.png", "images/wm.png")
-        lsb.run()
-        cv2.imwrite(f"result/extract_watermark_{i}.jpg", lsb.extract_watermark)
-        cv2.imwrite(f"result/extract_background_{i}.jpg", lsb.extract_background)
+    # for i in tqdm(range(1, 12)):
+    #     lsb = LSB(f"images/bg{i}.png", "images/wm.png")
+    #     lsb.run()
+    #     cv2.imwrite(f"result/synthesis_{i}.jpg", lsb.synthesis)
+    #     cv2.imwrite(f"result/extract_watermark_{i}.jpg", lsb.extract_watermark)
+    #     cv2.imwrite(f"result/extract_background_{i}.jpg", lsb.extract_background)
 
+    # lsb = LSB('images/bg1.png', 'images/wm.png')
+    # lsb.embed()
+    # lsb.synthesis = lsb.background_backup
+    # lsb.extract()
+    # cv2.imwrite(f"result/synthesis.jpg", lsb.synthesis)
+    # cv2.imwrite(f"result/extract_watermark.jpg", lsb.extract_watermark)
+    # cv2.imwrite(f"result/extract_background.jpg", lsb.extract_background)
