@@ -1,7 +1,9 @@
 import numpy as np
 import cv2
 import os
-from tqdm import tqdm
+
+
+import matplotlib.pyplot as plt
 
 
 class LSB(object):
@@ -12,6 +14,8 @@ class LSB(object):
         self.synthesis = None
         self.extract_background = None
         self.extract_watermark = None
+        self.background_filename = background_addr.split("/")[-1].split(".")[0]
+        self.watermark_filename = watermark_addr.split("/")[-1].split(".")[0]
 
         self.background = cv2.cvtColor(self.background, cv2.COLOR_BGR2RGB)
         self.watermark = cv2.cvtColor(self.watermark, cv2.COLOR_BGR2RGB)
@@ -59,10 +63,11 @@ class LSB(object):
         self.synthesis = __synthesis.astype(np.uint8)
         return self.synthesis
 
-    def extract(self):
-        bs_synthesis = self.bit_space(self.synthesis)
-        self.extract_watermark = np.zeros_like(self.synthesis)
-        self.extract_background = np.zeros_like(self.synthesis)
+    def extract(self, synthesis=None):
+        s = synthesis if synthesis is not None else self.synthesis
+        bs_synthesis = self.bit_space(s)
+        self.extract_watermark = np.zeros_like(s)
+        self.extract_background = np.zeros_like(s)
         for color_i in range(3):
             for i in range(8):
                 if i < self.embed_bit:
@@ -73,7 +78,9 @@ class LSB(object):
         self.extract_background = self.extract_background.astype(np.uint8)
         return self.extract_background, self.extract_watermark
 
-    def run(self):
+    def save(self):
+        if not os.path.exists("result"):
+            os.mkdir("result")
         self.embed()
         self.extract()
         self.background_backup = cv2.cvtColor(self.background_backup, cv2.COLOR_RGB2BGR)
@@ -81,22 +88,27 @@ class LSB(object):
         self.synthesis = cv2.cvtColor(self.synthesis, cv2.COLOR_RGB2BGR)
         self.extract_background = cv2.cvtColor(self.extract_background, cv2.COLOR_RGB2BGR)
         self.extract_watermark = cv2.cvtColor(self.extract_watermark, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(f"result/{self.background_filename}_synthesis.png", lsb.synthesis)
+        cv2.imwrite(f"result/{self.background_filename}_extract_watermark.png", lsb.extract_watermark)
+        cv2.imwrite(f"result/{self.background_filename}_extract_background.png", lsb.extract_background)
+
+    def show(self):
+        self.embed()
+        self.synthesis = self.background_backup
+        self.extract()
+        images = [self.background_backup, self.watermark_backup, self.synthesis,
+                  self.extract_background, self.extract_watermark]
+        title = ["background", "watermark", "synthesis", "extract_watermark", "extract_background"]
+        for i in range(len(images)):
+            plt.subplot(2, 3, i + 1)
+            plt.imshow(images[i])
+            plt.axis("off")
+            plt.title(title[i])
+        plt.show()
 
 
 if __name__ == "__main__":
-    if not os.path.exists("result"):
-        os.mkdir("result")
-    # for i in tqdm(range(1, 12)):
-    #     lsb = LSB(f"images/bg{i}.png", "images/wm.png")
-    #     lsb.run()
-    #     cv2.imwrite(f"result/synthesis_{i}.jpg", lsb.synthesis)
-    #     cv2.imwrite(f"result/extract_watermark_{i}.jpg", lsb.extract_watermark)
-    #     cv2.imwrite(f"result/extract_background_{i}.jpg", lsb.extract_background)
+    lsb = LSB('images/bg1.png', 'images/wm.png')
+    lsb.show()
 
-    # lsb = LSB('images/bg1.png', 'images/wm.png')
-    # lsb.embed()
-    # lsb.synthesis = lsb.background_backup
-    # lsb.extract()
-    # cv2.imwrite(f"result/synthesis.jpg", lsb.synthesis)
-    # cv2.imwrite(f"result/extract_watermark.jpg", lsb.extract_watermark)
-    # cv2.imwrite(f"result/extract_background.jpg", lsb.extract_background)
+
